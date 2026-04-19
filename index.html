@@ -3,62 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>画像合成プレビュー</title>
+<title>画像合成チェック</title>
+
 <style>
-  body {
-    margin: 0;
-    background: #111;
-    color: white;
-    font-family: sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
+body {
+  margin: 0;
+  background: #111;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
-  .card {
-    width: 95vw;
-    max-width: 1920px;
-    aspect-ratio: 1920 / 1080;
-    position: relative;
-    background: #222;
-    border-radius: 16px;
-    overflow: hidden;
-  }
+/* ← 正確な16:9（1920×1080） */
+.card {
+  width: min(95vw, 1200px);
+  aspect-ratio: 16 / 9;
+  position: relative;
+  background: #222;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 20px;
+}
 
-  #userImage {
-    position: absolute;
-    top: 0;
-    left: 0;
-    user-select: none;
-    pointer-events: none; /* ←掴めないように */
-  }
+/* 下の画像 */
+#userImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
 
-  #overlayImage {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-    z-index: 2; /* ←必ず上に表示 */
-  }
+/* 上の透過画像（必ず前面） */
+#overlayImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* ← 全体見せる */
+  pointer-events: none;
+  z-index: 10;
+}
 
-  .controls {
-    margin-top: 10px;
-    text-align: center;
-  }
+.controls {
+  margin-top: 15px;
+  text-align: center;
+}
 
-  button {
-    margin: 5px;
-    padding: 10px 15px;
-    font-size: 16px;
-    cursor: pointer;
-  }
+button {
+  margin: 5px;
+  padding: 10px 15px;
+  font-size: 18px;
+  cursor: pointer;
+}
 </style>
 </head>
+
 <body>
 
 <h2>画像合成チェック</h2>
@@ -69,13 +71,19 @@
 </div>
 
 <div class="controls">
-  <input type="file" id="fileInput" accept="image/*"><br>
-  <div>
-    <button onclick="move(0,-5)">↑</button><br>
-    <button onclick="move(-5,0)">←</button>
-    <button onclick="move(5,0)">→</button><br>
-    <button onclick="move(0,5)">↓</button>
-  </div>
+  <input type="file" id="fileInput" accept="image/*"><br><br>
+
+  <!-- 移動ボタン -->
+  <button onclick="move(0,-1)">↑(細)</button>
+  <button onclick="move(0,-5)">↑</button><br>
+
+  <button onclick="move(-5,0)">←</button>
+  <button onclick="move(-1,0)">←(細)</button>
+  <button onclick="move(1,0)">→(細)</button>
+  <button onclick="move(5,0)">→</button><br>
+
+  <button onclick="move(0,5)">↓</button>
+  <button onclick="move(0,1)">↓(細)</button>
 </div>
 
 <script>
@@ -93,6 +101,7 @@ function fitImage() {
   const imgRatio = userImage.naturalWidth / userImage.naturalHeight;
   const cardRatio = cardW / cardH;
 
+  // cover状態でフィット（隙間防止）
   if (imgRatio > cardRatio) {
     imgH = cardH;
     imgW = imgH * imgRatio;
@@ -118,12 +127,14 @@ function clampPosition() {
   const cardW = card.clientWidth;
   const cardH = card.clientHeight;
 
+  // 横制限
   if (imgW > cardW) {
     imgX = Math.min(0, Math.max(cardW - imgW, imgX));
   } else {
     imgX = (cardW - imgW) / 2;
   }
 
+  // 縦制限
   if (imgH > cardH) {
     imgY = Math.min(0, Math.max(cardH - imgH, imgY));
   } else {
