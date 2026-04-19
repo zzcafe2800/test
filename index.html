@@ -18,65 +18,152 @@
   }
 
   .card {
-    width: 80vw;
-    height: 80vh;
-    max-width: 900px;
-    max-height: 900px;
+    width: 95vw;
+    max-width: 1900px;
+    aspect-ratio: 1900 / 1080;
     position: relative;
     background: #222;
-    border-radius: 20px;
+    border-radius: 16px;
     overflow: hidden;
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   }
 
-  .bg-image, .overlay-image {
+  .layer {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    overflow: hidden;
+  }
+
+  #userImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    user-select: none;
+    cursor: grab;
+  }
+
+  #overlayImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* ← 全体が必ず見える */
+    pointer-events: none;
   }
 
   .controls {
-    margin-top: 20px;
-  }
-
-  input {
-    margin: 5px;
+    margin-top: 15px;
   }
 </style>
 </head>
 <body>
 
-<h2>画像合成チェックツール</h2>
+<h2>画像合成チェック</h2>
 
-<div class="card">
-  <!-- ユーザー画像（下） -->
-  <img id="userImage" class="bg-image" src="" alt="">
-
-  <!-- 1ss.png（上・透明部分あり） -->
-  <img id="overlayImage" class="overlay-image" src="1ss.png" alt="">
+<div class="card" id="card">
+  <div class="layer">
+    <img id="userImage">
+  </div>
+  <img id="overlayImage" src="1ss.png">
 </div>
 
 <div class="controls">
-  <label>背景画像を読み込む：</label>
   <input type="file" id="fileInput" accept="image/*">
 </div>
 
 <script>
 const fileInput = document.getElementById('fileInput');
 const userImage = document.getElementById('userImage');
+const card = document.getElementById('card');
 
-fileInput.addEventListener('change', function(e) {
+let isDragging = false;
+let startX, startY;
+let imgX = 0, imgY = 0;
+let imgW = 0, imgH = 0;
+
+function fitImage() {
+  const cardW = card.clientWidth;
+  const cardH = card.clientHeight;
+
+  const imgRatio = userImage.naturalWidth / userImage.naturalHeight;
+  const cardRatio = cardW / cardH;
+
+  if (imgRatio > cardRatio) {
+    imgH = cardH;
+    imgW = imgH * imgRatio;
+  } else {
+    imgW = cardW;
+    imgH = imgW / imgRatio;
+  }
+
+  imgX = (cardW - imgW) / 2;
+  imgY = (cardH - imgH) / 2;
+
+  applyTransform();
+}
+
+function applyTransform() {
+  userImage.style.width = imgW + 'px';
+  userImage.style.height = imgH + 'px';
+  userImage.style.left = imgX + 'px';
+  userImage.style.top = imgY + 'px';
+}
+
+function clampPosition() {
+  const cardW = card.clientWidth;
+  const cardH = card.clientHeight;
+
+  // はみ出し防止（隙間が出ない）
+  if (imgW > cardW) {
+    imgX = Math.min(0, Math.max(cardW - imgW, imgX));
+  } else {
+    imgX = (cardW - imgW) / 2;
+  }
+
+  if (imgH > cardH) {
+    imgY = Math.min(0, Math.max(cardH - imgH, imgY));
+  } else {
+    imgY = (cardH - imgH) / 2;
+  }
+}
+
+fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = function(event) {
-    userImage.src = event.target.result;
+  reader.onload = ev => {
+    userImage.src = ev.target.result;
+    userImage.onload = fitImage;
   };
   reader.readAsDataURL(file);
+});
+
+userImage.addEventListener('mousedown', e => {
+  isDragging = true;
+  startX = e.clientX - imgX;
+  startY = e.clientY - imgY;
+  userImage.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+
+  imgX = e.clientX - startX;
+  imgY = e.clientY - startY;
+
+  clampPosition();
+  applyTransform();
+});
+
+window.addEventListener('mouseup', () => {
+  isDragging = false;
+  userImage.style.cursor = 'grab';
+});
+
+window.addEventListener('resize', () => {
+  if (userImage.src) fitImage();
 });
 </script>
 
