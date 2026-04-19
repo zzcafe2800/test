@@ -44,7 +44,6 @@ body {
   z-index: 10;
 }
 
-/* 右下コントローラー */
 .dpad {
   position: absolute;
   bottom: 15px;
@@ -79,18 +78,17 @@ body {
   <img id="userImage">
   <img id="overlayImage" src="1ss.png">
 
-  <!-- 十字ボタン -->
   <div class="dpad">
     <div class="empty"></div>
-    <button onclick="move(0,-1)">↑</button>
+    <button data-x="0" data-y="-1">↑</button>
     <div class="empty"></div>
 
-    <button onclick="move(-1,0)">←</button>
+    <button data-x="-1" data-y="0">←</button>
     <div class="empty"></div>
-    <button onclick="move(1,0)">→</button>
+    <button data-x="1" data-y="0">→</button>
 
     <div class="empty"></div>
-    <button onclick="move(0,1)">↓</button>
+    <button data-x="0" data-y="1">↓</button>
     <div class="empty"></div>
   </div>
 </div>
@@ -103,9 +101,11 @@ body {
 const fileInput = document.getElementById('fileInput');
 const userImage = document.getElementById('userImage');
 const card = document.getElementById('card');
+const buttons = document.querySelectorAll('.dpad button');
 
 let imgX = 0, imgY = 0;
 let imgW = 0, imgH = 0;
+let interval = null;
 
 function fitImage() {
   const cardW = card.clientWidth;
@@ -157,6 +157,24 @@ function move(dx, dy) {
   imgY += dy;
   clampPosition();
   applyTransform();
+}
+
+// 長押し対応
+buttons.forEach(btn => {
+  const dx = Number(btn.dataset.x);
+  const dy = Number(btn.dataset.y);
+
+  btn.addEventListener('mousedown', () => {
+    move(dx, dy);
+    interval = setInterval(() => move(dx, dy), 16); // 約60fps
+  });
+
+  btn.addEventListener('mouseup', stop);
+  btn.addEventListener('mouseleave', stop);
+});
+
+function stop() {
+  clearInterval(interval);
 }
 
 fileInput.addEventListener('change', e => {
